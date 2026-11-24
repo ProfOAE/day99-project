@@ -1,0 +1,27 @@
+name: day99-deploy
+on:
+  push:
+    branches: [main]
+    paths: ['app/**', '.github/workflows/deploy.yml']
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::829999272172:role/day99-github-ecr-push
+          aws-region: eu-central-1
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build and push with SHA tag
+        run: |
+          REPO=829999272172.dkr.ecr.eu-central-1.amazonaws.com/hello-app
+          SHA=${{ github.sha }}
+          docker build -t $REPO:$SHA ./app
+          docker push $REPO:$SHA
+          echo "Pushed $REPO:$SHA"
